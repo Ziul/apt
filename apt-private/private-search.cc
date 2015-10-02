@@ -13,6 +13,7 @@
 
 #include <sstream>
 #include <vector>
+#include <apt-private/timer.h>
 
 									/*}}}*/
 
@@ -57,6 +58,7 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 
 
    std::vector<PackageInfo> outputVector;
+   timer time;
 
    LocalitySortedVersionSet bag;
    OpTextProgress progress(*_config);
@@ -76,6 +78,7 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 
    int Done = 0;
    std::vector<bool> PkgsDone(Cache->Head().PackageCount, false);
+   time.begin();
    for ( ;V != bag.end(); ++V)
    {
       if (Done%500 == 0)
@@ -101,6 +104,7 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 	 outputVector.emplace_back(CacheFile, records, V, outs.str());
 	}
    }
+   time.end();
    switch(PackageInfo::getOrderByOption())
    {
       case PackageInfo::REVERSEALPHABETIC:
@@ -119,9 +123,10 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
    progress.Done();
 
    // output the sorted vector
-   for(auto k:outputVector)
-      std::cout << k.formated_output() << std::endl;
+   // for(auto k:outputVector)
+   //    std::cout << k.formated_output() << std::endl;
 
+   std::cerr << "time: " << time.currenttime() << std::endl;
 
    return true;
 }
