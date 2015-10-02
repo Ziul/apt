@@ -25,6 +25,7 @@
 #include <utility>
 
 #include <apti18n.h>
+#include <apt-private/timer.h>
 									/*}}}*/
 
 bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
@@ -59,6 +60,7 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
    bool const NamesOnly = _config->FindB("APT::Cache::NamesOnly", false);
 
    std::map<std::string, std::string> output_map;
+   timer time;
 
    LocalitySortedVersionSet bag;
    OpTextProgress progress(*_config);
@@ -78,6 +80,7 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 
    int Done = 0;
    std::vector<bool> PkgsDone(Cache->Head().PackageCount, false);
+   time.begin();
    for ( ;V != bag.end(); ++V)
    {
       if (Done%500 == 0)
@@ -115,15 +118,17 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 		  PkgName, outs.str()));
       }
    }
+   time.end();
    APT_FREE_PATTERNS();
    progress.Done();
 
    // FIXME: SORT! and make sorting flexible (alphabetic, by pkg status)
    // output the sorted map
-   std::map<std::string, std::string>::const_iterator K;
-   for (K = output_map.begin(); K != output_map.end(); ++K)
-      std::cout << (*K).second << std::endl;
+   // std::map<std::string, std::string>::const_iterator K;
+   // for (K = output_map.begin(); K != output_map.end(); ++K)
+   //    std::cout << (*K).second << std::endl;
 
+   std::cerr << "time: " << time.currenttime() << std::endl;
    return true;
 }
 									/*}}}*/
