@@ -16,6 +16,32 @@
 
 									/*}}}*/
 
+int KMP(std::string S, const std::string K)
+{
+	std::vector<int> T(K.size() + 1, -1);
+
+	for(unsigned int i = 1; i <= K.size(); i++)
+	{
+		int pos = T[i - 1];
+		while(pos != -1 && K[pos] != K[i - 1]) pos = T[pos];
+		T[i] = pos + 1;
+	}
+
+	unsigned int sp = 0;
+	int kp = 0;
+	while(sp < S.size())
+	{
+		while(kp != -1 && (kp == (signed int)K.size() || K[kp] != S[sp])) kp = T[kp];
+		kp++;
+		sp++;
+		if(kp == (signed int)K.size()) 
+			return sp - K.size();
+	}
+
+	return -1;
+}
+
+
 bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 {
    pkgCacheFile CacheFile;
@@ -29,23 +55,6 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
    if (NumPatterns < 1)
       return _error->Error(_("You must give at least one search pattern"));
 
-#define APT_FREE_PATTERNS() for (std::vector<regex_t>::iterator P = Patterns.begin(); \
-      P != Patterns.end(); ++P) { regfree(&(*P)); }
-
-   // Compile the regex pattern
-   std::vector<regex_t> Patterns;
-   for (unsigned int I = 0; I != NumPatterns; ++I)
-   {
-      regex_t pattern;
-      if (regcomp(&pattern, CmdL.FileList[I + 1], REG_EXTENDED | REG_ICASE | REG_NOSUB) != 0)
-      {
-	 APT_FREE_PATTERNS();
-	 return _error->Error("Regex compilation error");
-      }
-      Patterns.push_back(pattern);
-   }
-
-   bool const NamesOnly = _config->FindB("APT::Cache::NamesOnly", false);
 
    std::vector<PackageInfo> outputVector;
 
@@ -78,30 +87,19 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
       if (PkgsDone[P->ID] == true)
 	 continue;
 
-      char const * const PkgName = P.Name();
+      std::string const PkgName = P.Name();
       pkgCache::DescIterator Desc = V.TranslatedDescription();
       pkgRecords::Parser &parser = records.Lookup(Desc.FileList());
       std::string const LongDesc = parser.LongDesc();
 
-      bool all_found = true;
-      for (std::vector<regex_t>::const_iterator pattern = Patterns.begin();
-	    pattern != Patterns.end(); ++pattern)
-      {
-	 if (regexec(&(*pattern), PkgName, 0, 0, 0) == 0)
-	    continue;
-	 else if (NamesOnly == false && regexec(&(*pattern), LongDesc.c_str(), 0, 0, 0) == 0)
-	    continue;
-	 // search patterns are AND, so one failing fails all
-	 all_found = false;
-	 break;
-      }
-      if (all_found == true)
-      {
+      for (unsigned int I = 0; I != NumPatterns; ++I)
+	if ((KMP(PkgName,CmdL.FileList[I + 1])) >=0)
+	{
 	 PkgsDone[P->ID] = true;
 	 std::stringstream outs;
 	 ListSingleVersion(CacheFile, records, V, outs, format);
 	 outputVector.emplace_back(CacheFile, records, V, outs.str());
-      }
+	}
    }
    switch(PackageInfo::getOrderByOption())
    {
@@ -118,7 +116,6 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 	 std::sort(outputVector.begin(), outputVector.end(), OrderByAlphabetic);
 	 break;
    }
-   APT_FREE_PATTERNS();
    progress.Done();
 
    // output the sorted vector
