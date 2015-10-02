@@ -16,6 +16,7 @@
 !/doc/examples/
 !/doc/po/
 !/doc/en/makefile
+/po
 
 # package building artifacts
 /debian/*.log
