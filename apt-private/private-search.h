@@ -6,7 +6,7 @@
 class CommandLine;
 
 APT_PUBLIC bool FullTextSearch(CommandLine &CmdL);
-int KMP(std::string S, const std::string K);
+int RK(std::string S, std::string K);
 
 
 #endif

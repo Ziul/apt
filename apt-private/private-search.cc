@@ -17,29 +17,36 @@
 
 									/*}}}*/
 
-int KMP(std::string S, const std::string K)
-{
-	std::vector<int> T(K.size() + 1, -1);
+#define REHASH(a, b, h) ((((h) - (a)*d) << 1) + (b))
+int RK(std::string S, std::string K) {
+   const char *x = S.c_str();
+   int m = S.length();
+   const char *y = K.c_str();
+   int n = K.length();
 
-	for(unsigned int i = 1; i <= K.size(); i++)
-	{
-		int pos = T[i - 1];
-		while(pos != -1 && K[pos] != K[i - 1]) pos = T[pos];
-		T[i] = pos + 1;
-	}
+   int d, hx, hy, i, j;
 
-	unsigned int sp = 0;
-	int kp = 0;
-	while(sp < S.size())
-	{
-		while(kp != -1 && (kp == (signed int)K.size() || K[kp] != S[sp])) kp = T[kp];
-		kp++;
-		sp++;
-		if(kp == (signed int)K.size()) 
-			return sp - K.size();
-	}
+   /* Preprocessing */
+   /* computes d = 2^(m-1) with
+      the left-shift operator */
+   for (d = i = 1; i < m; ++i)
+      d = (d<<1);
 
-	return -1;
+   for (hy = hx = i = 0; i < m; ++i) {
+      hx = ((hx<<1) + x[i]);
+      hy = ((hy<<1) + y[i]);
+   }
+
+   /* Searching */
+   j = 0;
+   while (j <= n-m) {
+      if (hx == hy && memcmp(x, y + j, m) == 0)
+         return j;
+      hy = REHASH(y[j], y[j + m], hy);
+      ++j;
+   }
+   return -1;
+
 }
 
 
@@ -90,13 +97,13 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
       if (PkgsDone[P->ID] == true)
 	 continue;
 
-      std::string const PkgName = P.Name();
+      std::string PkgName = P.Name();
       pkgCache::DescIterator Desc = V.TranslatedDescription();
       pkgRecords::Parser &parser = records.Lookup(Desc.FileList());
       std::string const LongDesc = parser.LongDesc();
 
       for (unsigned int I = 0; I != NumPatterns; ++I)
-	if ((KMP(PkgName,CmdL.FileList[I + 1])) >=0)
+	if ((RK(PkgName, CmdL.FileList[I + 1]) ) >=0)
 	{
 	 PkgsDone[P->ID] = true;
 	 std::stringstream outs;
