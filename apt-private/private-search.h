@@ -6,6 +6,6 @@
 class CommandLine;
 
 APT_PUBLIC bool FullTextSearch(CommandLine &CmdL);
-
+int RabinKarp(std::string StringInput, std::string Pattner);
 
 #endif
