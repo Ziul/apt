@@ -134,14 +134,19 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 	 }
       }
       else
+      {
 	 for (unsigned int I = 0; I != NumPatterns; ++I)
- 	    if (((RabinKarp(CmdL.FileList[I + 1], P.Name()) < 0) ) and 
-		( (NamesOnly == false) && (RabinKarp(CmdL.FileList[I + 1], LongDesc) < 0)))
+	 {
+ 	    if ((RabinKarp(CmdL.FileList[I + 1], P.Name()) >= 0) ) 
  	    {
-	       all_found = false;
- 	       break;
+	       continue;
  	    }
-
+ 	    else if ( (NamesOnly == false) && (RabinKarp(CmdL.FileList[I + 1], LongDesc) >= 0))
+	       continue;
+	    all_found = false;
+	    break;
+	 }
+      }
       if (all_found == true)
       {
 	 PkgsDone[P->ID] = true;

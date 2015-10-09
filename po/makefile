@@ -59,7 +59,7 @@ $(POTFILES) : $(PO)/%.pot :
 $(LANG_POFILES) : $(PO_DOMAINS)/%.po : $(POTFILES)
 	printf "%s " "Generating $@"
 	echo $@ : $(notdir $@) $(PO)/$(call GETDOMAIN,$*).pot > $(PO)/$(call GETDOMAIN,$*)_$(notdir $@).d
-	$(MSGMERGE) --add-location=file $(notdir $@) $(PO)/$(call GETDOMAIN,$*).pot -o $@
+	$(MSGMERGE) --add-location $(notdir $@) $(PO)/$(call GETDOMAIN,$*).pot -o $@
 
 $(MOFILES) : $(PO_DOMAINS)/%.mo : $(PO_DOMAINS)/%.po
 	printf "%s: " "Generating $(LOCALE)/$(notdir $*)/LC_MESSAGES/$(call GETDOMAIN,$*).mo"
