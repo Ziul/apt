@@ -49,6 +49,39 @@ int RK(std::string S, std::string K) {
 
 }
 
+int levenshtein_distance(const std::string &s1, const std::string &s2)
+{
+   // To change the type this function manipulates and returns, change
+   // the return type and the types of the two variables below.
+   int s1len = s1.size();
+   int s2len = s2.size();
+   
+   if (s2len > s1len)
+      return -1;
+   auto column_start = (decltype(s1len))1;
+   
+   auto column = new decltype(s1len)[s1len + 1];
+   std::iota(column + column_start, column + s1len + 1, column_start);
+   
+   for (auto x = column_start; x <= s2len; x++) {
+      column[0] = x;
+      auto last_diagonal = x - column_start;
+      for (auto y = column_start; y <= s1len; y++) {
+         auto old_diagonal = column[y];
+         auto possibilities = {
+            column[y] + 1,
+            column[y - 1] + 1,
+            last_diagonal + (s1[y - 1] == s2[x - 1]? 0 : 1)
+         };
+         column[y] = std::min(possibilities);
+         last_diagonal = old_diagonal;
+      }
+   }
+   auto result = column[s1len];
+   delete[] column;
+   return result;
+}
+
 
 bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 {
@@ -103,13 +136,16 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
       std::string const LongDesc = parser.LongDesc();
 
       for (unsigned int I = 0; I != NumPatterns; ++I)
-	if ((RK(PkgName, CmdL.FileList[I + 1]) ) >=0)
-	{
-	 PkgsDone[P->ID] = true;
-	 std::stringstream outs;
-	 ListSingleVersion(CacheFile, records, V, outs, format);
-	 outputVector.emplace_back(CacheFile, records, V, outs.str());
-	}
+      {
+         int distance = levenshtein_distance(PkgName, CmdL.FileList[I + 1]);
+	 if ((distance >=0) && (distance <= PkgName.length()/2 ))
+	 {
+	    PkgsDone[P->ID] = true;
+	    std::stringstream outs;
+	    ListSingleVersion(CacheFile, records, V, outs, format);
+	    outputVector.emplace_back(CacheFile, records, V, outs.str());
+	 }
+      }
    }
    time.end();
    switch(PackageInfo::getOrderByOption())
