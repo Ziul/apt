@@ -17,71 +17,42 @@
 
 									/*}}}*/
 
-#define REHASH(a, b, h) ((((h) - (a)*d) << 1) + (b))
-int RK(std::string S, std::string K) {
-   const char *x = S.c_str();
-   int m = S.length();
-   const char *y = K.c_str();
-   int n = K.length();
-
-   int d, hx, hy, i, j;
-
-   /* Preprocessing */
-   /* computes d = 2^(m-1) with
-      the left-shift operator */
-   for (d = i = 1; i < m; ++i)
-      d = (d<<1);
-
-   for (hy = hx = i = 0; i < m; ++i) {
-      hx = ((hx<<1) + x[i]);
-      hy = ((hy<<1) + y[i]);
-   }
-
-   /* Searching */
-   j = 0;
-   while (j <= n-m) {
-      if (hx == hy && memcmp(x, y + j, m) == 0)
-         return j;
-      hy = REHASH(y[j], y[j + m], hy);
-      ++j;
-   }
-   return -1;
-
-}
-
-int levenshtein_distance(const std::string &s1, const std::string &s2)
+float dice_coefficient(std::string string1, std::string string2)
 {
-   // To change the type this function manipulates and returns, change
-   // the return type and the types of the two variables below.
-   int s1len = s1.size();
-   int s2len = s2.size();
-   
-   if (s2len > s1len)
-      return -1;
-   auto column_start = (decltype(s1len))1;
-   
-   auto column = new decltype(s1len)[s1len + 1];
-   std::iota(column + column_start, column + s1len + 1, column_start);
-   
-   for (auto x = column_start; x <= s2len; x++) {
-      column[0] = x;
-      auto last_diagonal = x - column_start;
-      for (auto y = column_start; y <= s1len; y++) {
-         auto old_diagonal = column[y];
-         auto possibilities = {
-            column[y] + 1,
-            column[y - 1] + 1,
-            last_diagonal + (s1[y - 1] == s2[x - 1]? 0 : 1)
-         };
-         column[y] = std::min(possibilities);
-         last_diagonal = old_diagonal;
-      }
-   }
-   auto result = column[s1len];
-   delete[] column;
-   return result;
-}
 
+        std::set<std::string> string1_bigrams;
+        std::set<std::string> string2_bigrams;
+
+        //base case
+        if(string1.length() == 0 || string2.length() == 0)
+        {
+                return 0;
+        }        
+
+        for(unsigned int i = 0; i < (string1.length() - 1); i++) {      // extract character bigrams from string1
+                string1_bigrams.insert(string1.substr(i, 2));
+        }
+        for(unsigned int i = 0; i < (string2.length() - 1); i++) {      // extract character bigrams from string2
+                string2_bigrams.insert(string2.substr(i, 2));
+        }
+
+        int intersection = 0;
+        
+        // find the intersection between the two sets
+        
+        for(auto it = string2_bigrams.begin(); 
+            it != string2_bigrams.end(); 
+            it++)
+        {    
+                intersection += string1_bigrams.count((*it));
+        }
+
+        // calculate dice coefficient
+        int total = string1_bigrams.size() + string2_bigrams.size();
+        float dice = (float)(intersection * 2) / (float)total;
+
+        return dice;
+}
 
 bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 {
@@ -137,8 +108,8 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 
       for (unsigned int I = 0; I != NumPatterns; ++I)
       {
-         int distance = levenshtein_distance(PkgName, CmdL.FileList[I + 1]);
-	 if ((distance >=0) && (distance <= PkgName.length()/2 ))
+         float distance = dice_coefficient(PkgName, CmdL.FileList[I + 1]);
+	 if (distance >= 0.5 )
 	 {
 	    PkgsDone[P->ID] = true;
 	    std::stringstream outs;
@@ -166,8 +137,8 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
    progress.Done();
 
    // output the sorted vector
-   // for(auto k:outputVector)
-   //    std::cout << k.formated_output() << std::endl;
+   for(auto k:outputVector)
+      std::cout << k.formated_output() << std::endl;
 
    std::cerr << "time: " << time.currenttime() << std::endl;
 
