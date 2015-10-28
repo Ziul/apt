@@ -47,6 +47,25 @@ int RabinKarp(std::string StringInput, std::string Pattern) {
    return -1;
 }
 
+bool identify_regex(std::vector<std::string> input)
+{
+   /*
+      not all characters can be included, as have
+      packages with the chars .-:
+   */
+   std::string reserver_regex = "^$*+?()[]{}\\|";
+
+   for(auto k:input)
+      if( reserver_regex.find(k) == std::string::npos )
+	 return true;
+
+   std::cout << "\n----------\nREGEX SAFE\n----------\n";
+   for(auto k:input)
+   	std::cout << k << reserver_regex.find(k) << std::endl;
+   return false;
+
+}
+
 bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 {
    pkgCacheFile CacheFile;
@@ -65,7 +84,10 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 
    // Compile the regex pattern
    std::vector<regex_t> Patterns;
-   if (_config->FindB("APT::Cache::UsingRegex",false))
+   std::vector<std::string> args;
+   for (unsigned int I = 0; I != NumPatterns; ++I)
+   	args.emplace_back( CmdL.FileList[I + 1]);
+   if ((_config->FindB("APT::Cache::UsingRegex",false)) || identify_regex(args))
       for (unsigned int I = 0; I != NumPatterns; ++I)
       {
 	 regex_t pattern;
@@ -116,7 +138,7 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
       std::string const LongDesc = parser.LongDesc();
 
       bool all_found = true;
-      if (_config->FindB("APT::Cache::UsingRegex",false))
+      if ((_config->FindB("APT::Cache::UsingRegex",false)) || identify_regex(args))
       {
 	 for (std::vector<regex_t>::const_iterator pattern = Patterns.begin();
 	       pattern != Patterns.end(); ++pattern)
@@ -167,7 +189,7 @@ bool FullTextSearch(CommandLine &CmdL)					/*{{{*/
 	 std::sort(outputVector.begin(), outputVector.end(), OrderByAlphabetic);
 	 break;
    }
-   if (_config->FindB("APT::Cache::UsingRegex",false))
+   if ((_config->FindB("APT::Cache::UsingRegex",false)) || identify_regex(args))
       APT_FREE_PATTERNS();
    progress.Done();
 
